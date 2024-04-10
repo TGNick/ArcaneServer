@@ -4,79 +4,99 @@ const mongoose = require("mongoose");
 const fs = require("fs");
 const rateLimit = require("express-rate-limit");
 const jwt = require("jsonwebtoken");
-const config = JSON.parse(fs.readFileSync("./Config/config.json").toString());
-
+const config = require("./Config/config.json");
 const log = require("./structs/log.js");
 const error = require("./structs/error.js");
 const functions = require("./structs/functions.js");
 
-if (!fs.existsSync("./ClientSettings")) fs.mkdirSync("./ClientSettings");
-
-global.JWT_SECRET = functions.MakeID();
+// Load configuration
 const PORT = 3551;
+const tokensFilePath = "./tokenManager/tokens.json";
+const configFilePath = "./Config/config.json";
 
-const tokens = JSON.parse(fs.readFileSync("./tokenManager/tokens.json").toString());
-
-for (let tokenType in tokens) {
-    for (let tokenIndex in tokens[tokenType]) {
-        let decodedToken = jwt.decode(tokens[tokenType][tokenIndex].token.replace("eg1~", ""));
-
-        if (DateAddHours(new Date(decodedToken.creation_date), decodedToken.hours_expire).getTime() <= new Date().getTime()) {
-            tokens[tokenType].splice(Number(tokenIndex), 1);
-        }
+const loadConfig = (filePath) => {
+    try {
+        return JSON.parse(fs.readFileSync(filePath).toString());
+    } catch (error) {
+        log.error(`Failed to load configuration from ${filePath}`);
+        throw error;
     }
-}
+};
 
-fs.writeFileSync("./tokenManager/tokens.json", JSON.stringify(tokens, null, 2));
+const config = loadConfig(configFilePath);
+const accessTokens = tokens.accessTokens;
+const refreshTokens = tokens.refreshTokens;
+const clientTokens = tokens.clientTokens;
 
-global.accessTokens = tokens.accessTokens;
-global.refreshTokens = tokens.refreshTokens;
-global.clientTokens = tokens.clientTokens;
+// Remove expired tokens
+const removeExpiredTokens = (tokens) => {
+    const currentDate = new Date();
+    for (let tokenType in tokens) {
+        tokens[tokenType] = tokens[tokenType].filter(token => {
+            const decodedToken = jwt.decode(token.token.replace("eg1~", ""));
+            return DateAddHours(new Date(decodedToken.creation_date), decodedToken.hours_expire) > currentDate;
+        });
+    }
+    return tokens;
+};
 
-global.exchangeCodes = [];
+const DateAddHours = (date, hours) => {
+    date.setHours(date.getHours() + hours);
+    return date;
+};
 
-mongoose.connect(config.mongodb.database, () => {
-    log.backend("App successfully connected to MongoDB!");
-});
+const updatedTokens = removeExpiredTokens(tokens);
+fs.writeFileSync(tokensFilePath, JSON.stringify(updatedTokens, null, 2));
 
-mongoose.connection.on("error", err => {
-    log.error("MongoDB failed to connect, please make sure you have MongoDB installed and running.");
-    throw err;
-});
+// Connect to MongoDB
+mongoose.connect(config.mongodb.database, { useNewUrlParser: true, useUnifiedTopology: true })
+    .then(() => {
+        log.backend("App successfully connected to MongoDB!");
+    })
+    .catch((error) => {
+        log.error("MongoDB failed to connect, please make sure you have MongoDB installed and running.");
+        log.error(error);
+        process.exit(1); // Exit the process if MongoDB connection fails
+    });
 
+// Middleware for handling endpoint not found errors
+const handleNotFoundError = (req, res, next) => {
+    error.createError(
+        "errors.com.epicgames.common.not_found", 
+        "Sorry, the resource you were trying to find could not be found", 
+        undefined, 1004, undefined, 404, res
+    );
+};
+
+// Apply rate limiting middleware
 app.use(rateLimit({ windowMs: 0.5 * 60 * 1000, max: 45 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Load routes dynamically
 fs.readdirSync("./routes").forEach(fileName => {
     app.use(require(`./routes/${fileName}`));
 });
 
-app.listen(PORT, () => {
+// Start the server
+const server = app.listen(PORT, () => {
     log.backend(`App started listening on port ${PORT}`);
-
     require("./xmpp/xmpp.js");
     require("./DiscordBot");
-}).on("error", async (err) => {
+});
+
+// Error handling for server start
+server.on("error", async (err) => {
     if (err.code == "EADDRINUSE") {
-        log.error(`Port ${PORT} is already in use!\nClosing in 3 seconds...`);
-        await functions.sleep(3000)
-        process.exit(0);
-    } else throw err;
+        log.error(`Port ${PORT} is already in use!`);
+        await functions.sleep(3000);
+        process.exit(1); // Exit the process if the port is already in use
+    } else {
+        log.error("An error occurred while starting the server:");
+        log.error(err);
+        process.exit(1); // Exit the process if any other error occurs during server start
+    }
 });
 
-// if endpoint not found, return this error
-app.use((req, res, next) => {
-    error.createError(
-        "errors.com.epicgames.common.not_found", 
-        "Sorry the resource you were trying to find could not be found", 
-        undefined, 1004, undefined, 404, res
-    );
-});
-
-function DateAddHours(pdate, number) {
-    let date = pdate;
-    date.setHours(date.getHours() + number);
-
-    return date;
-}
+// Endpoint not found handler
+app.use(handleNotFoundError);
