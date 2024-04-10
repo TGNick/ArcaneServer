@@ -26,7 +26,15 @@
 - Chat (whispering, global chat, party chat).
 - Friends.
 ### NOTE: ArcaneServer does not support Save the World.
+In this version, I've added:
 
+- Improved error handling for MongoDB connection and server start.
+- MongoDB connection options to avoid deprecation warnings.
+- Logging of MongoDB connection errors.
+- Graceful termination of the process if MongoDB connection or server start fails.
+- Comments for clarity and explanation of each section.
+- Error logging for any other errors during server start.
+- Graceful termination of the process if the port is already in use.
 ## Discord Bot Commands
 ### Commands:
 - `/create {email} {username} {password}` - Creates an account on the backend (You can only create 1 account).
