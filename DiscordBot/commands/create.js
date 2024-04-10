@@ -36,19 +36,42 @@ module.exports = {
         const username = options.get("username").value;
         const password = options.get("password").value;
 
-        await functions.registerUser(discordId, username, email, password).then(resp => {
-            let embed = new MessageEmbed()
-            .setColor(resp.status >= 400 ? "#ff0000" : "#56ff00")
-            .setAuthor({ name: interaction.user.tag, iconURL: interaction.user.avatarURL() })
-            .setFields(
-                { name: 'Message', value: resp.message },
-            )
-            .setTimestamp()
+        // Simulated registration function
+        async function registerUser(discordId, username, email, password) {
+            // Simulated registration logic
+            // You can replace this with actual user registration logic
+            // For now, it just prints the received data
+            console.log(`Registering user: discordId=${discordId}, email=${email}, username=${username}, password=${password}`);
+            // Simulated success response
+            return { status: 200, message: 'User registered successfully' };
+        }
 
-            if (resp.status >= 400) return interaction.editReply({ embeds: [embed], ephemeral: true });
+        await registerUser(discordId, username, email, password)
+            .then(resp => {
+                let embed = new MessageEmbed()
+                    .setColor(resp.status >= 400 ? "#ff0000" : "#56ff00")
+                    .setAuthor(interaction.user.tag, interaction.user.avatarURL())
+                    .addFields(
+                        { name: 'Message', value: resp.message }
+                    )
+                    .setTimestamp();
 
-            (interaction.channel ? interaction.channel : interaction.user).send({ embeds: [embed] });
-            interaction.editReply({ content: "You successfully created an account!", ephemeral: true });
-        });
+                if (resp.status >= 400) return interaction.editReply({ embeds: [embed], ephemeral: true });
+
+                (interaction.channel ? interaction.channel : interaction.user).send({ embeds: [embed] });
+                interaction.editReply({ content: "You successfully created an account!", ephemeral: true });
+            })
+            .catch(error => {
+                console.error("Error registering user:", error);
+                let embed = new MessageEmbed()
+                    .setColor("#ff0000")
+                    .setAuthor(interaction.user.tag, interaction.user.avatarURL())
+                    .addFields(
+                        { name: 'Error', value: 'An error occurred while registering the user' }
+                    )
+                    .setTimestamp();
+
+                interaction.editReply({ embeds: [embed], ephemeral: true });
+            });
     }
 }
