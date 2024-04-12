@@ -3,24 +3,24 @@ const functions = require("../../structs/functions.js");
 
 module.exports = {
     commandInfo: {
-        name: "create",
+        name: "signup",
         description: "Creates an account on Lawin.",
         options: [
             {
                 name: "email",
-                description: "Your email.",
+                description: "Your account email.",
                 required: true,
                 type: 3 // string
             },
             {
                 name: "username",
-                description: "Your username.",
+                description: "Your account username.",
                 required: true,
                 type: 3
             },
             {
                 name: "password",
-                description: "Your password.",
+                description: "Your account password.",
                 required: true,
                 type: 3
             }
