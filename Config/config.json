@@ -1,15 +1,18 @@
 {
-    "moderators": ["discordId"],
     "discord": {
         "bot_token": ""
     },
     "mongodb": {
         "database": "mongodb://127.0.0.1/arcanedb"
     },
-    "chat": {
-        "//": "Disabling global chat can help the server to perform faster as less resources are used.",
-        "EnableGlobalChat": false
+    "server": {
+        "matchmakerIP": "127.0.0.1:80",
+        "gameServerIP": "127.0.0.1:7777"
     },
-    "matchmakerIP": "127.0.0.1:80",
-    "gameServerIP": "127.0.0.1:7777"
+    "chat": {
+        "enableGlobalChat": false
+    },
+    "security": {
+        "moderators": ["discordId"]
+    }
 }
