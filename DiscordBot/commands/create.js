@@ -43,7 +43,7 @@ module.exports = {
             // For now, it just prints the received data
             console.log(`Registering user: discordId=${discordId}, email=${email}, username=${username}, password=${password}`);
             // Simulated success response
-            return { status: 200, message: 'User registered successfully' };
+            return { status: 200, message:'a user registered on arcaneserver' };
         }
 
         await registerUser(discordId, username, email, password)
