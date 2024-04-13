@@ -54,7 +54,7 @@ fs.writeFileSync(tokensFilePath, JSON.stringify(updatedTokens, null, 2));
 // Connect to MongoDB
 mongoose.connect(config.mongodb.database, { useNewUrlParser: true, useUnifiedTopology: true })
     .then(() => {
-        log.backend("ArcaneServer successfully connected to MongoDB!!!!!!!!!!!!");
+        log.backend("ArcaneServer successfully connected to MongoDB);
     })
     .catch((error) => {
         log.error("MongoDB failed to connect, please make sure you have MongoDB installed and running.");
